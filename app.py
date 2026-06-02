@@ -4,6 +4,7 @@ import threading
 
 from database import Database
 from serial_reader import SerialReader
+from exporter import simpan_kunjungan
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -639,6 +640,10 @@ class App(ctk.CTk):
                 )
                 self.last_scan_label.configure(text=f"Kartu valid - {data['waktu']}")
                 self._flash_scan_area(HIJAU)
+                try:
+                    simpan_kunjungan(uid, data['nim'], data['nama'])
+                except Exception:
+                    pass
             else:
                 is_warning = "sudah scan" in result[1].lower()
                 color = ORANYE if is_warning else MERAH
