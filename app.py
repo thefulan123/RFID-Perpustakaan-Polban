@@ -4,7 +4,7 @@ import threading
 
 from database import Database
 from serial_reader import SerialReader
-from exporter import simpan_kunjungan
+from exporter import simpan_kunjungan, BASE_DIR as DATA_DIR
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -521,6 +521,17 @@ class App(ctk.CTk):
             anchor="w", padx=30, pady=(5, 15)
         )
 
+        data_row = ctk.CTkFrame(info_frame, fg_color="transparent")
+        data_row.pack(fill="x", padx=30, pady=(0, 15))
+        ctk.CTkLabel(
+            data_row, text=f"Data Excel: {DATA_DIR}", font=ctk.CTkFont(size=11),
+            text_color="gray",
+        ).pack(side="left")
+        ctk.CTkButton(
+            data_row, text="Buka Folder", command=self._buka_folder_data,
+            width=100, height=28, font=ctk.CTkFont(size=12),
+        ).pack(side="right")
+
     def _start_background_tasks(self):
         self._app_running = True
         self._update_clock()
@@ -682,6 +693,18 @@ class App(ctk.CTk):
 
     def _clear_msg(self):
         self._clear_label("form_msg")
+
+    def _buka_folder_data(self):
+        import os
+        import subprocess
+        try:
+            if os.path.exists(DATA_DIR):
+                subprocess.Popen(["explorer", DATA_DIR], shell=True)
+            else:
+                os.makedirs(DATA_DIR)
+                subprocess.Popen(["explorer", DATA_DIR], shell=True)
+        except Exception:
+            pass
 
     def _restore_border(self, original):
         try:
