@@ -141,20 +141,20 @@ class App(ctk.CTk):
         self.geometry("800x500")
         self.minsize(800, 500)
 
-        header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(15, 5))
+        self._guest_header = ctk.CTkFrame(self, fg_color="transparent")
+        self._guest_header.pack(fill="x", padx=20, pady=(15, 5))
 
         ctk.CTkLabel(
-            header,
+            self._guest_header,
             text="SISTEM PENDATAAN PENGUNJUNG PERPUSTAKAAN",
             font=ctk.CTkFont(size=20, weight="bold"),
         ).pack(side="left")
 
-        self.time_label = ctk.CTkLabel(header, text="", font=ctk.CTkFont(size=14))
+        self.time_label = ctk.CTkLabel(self._guest_header, text="", font=ctk.CTkFont(size=14))
         self.time_label.pack(side="right")
 
         btn_logout = ctk.CTkButton(
-            header, text="Logout", command=self._logout, width=70, height=28,
+            self._guest_header, text="Logout", command=self._logout, width=70, height=28,
             fg_color="transparent", border_width=1, text_color=("gray90", "gray90"),
             font=ctk.CTkFont(size=12),
         )
@@ -196,22 +196,22 @@ class App(ctk.CTk):
         self.btn_random.pack(side="left", padx=5)
 
     def _build_monitoring_tab(self):
-        header_frame = ctk.CTkFrame(self.tab_monitoring, fg_color="transparent")
-        header_frame.pack(fill="x", padx=20, pady=(15, 5))
+        self._mon_header = ctk.CTkFrame(self.tab_monitoring, fg_color="transparent")
+        self._mon_header.pack(fill="x", padx=20, pady=(15, 5))
 
         ctk.CTkLabel(
-            header_frame,
+            self._mon_header,
             text="SISTEM PENDATAAN PENGUNJUNG PERPUSTAKAAN",
             font=ctk.CTkFont(size=20, weight="bold"),
         ).pack(side="left")
 
         self.time_label = ctk.CTkLabel(
-            header_frame, text="", font=ctk.CTkFont(size=14)
+            self._mon_header, text="", font=ctk.CTkFont(size=14)
         )
         self.time_label.pack(side="right")
 
         ctk.CTkButton(
-            header_frame, text="Logout", command=self._logout, width=70, height=28,
+            self._mon_header, text="Logout", command=self._logout, width=70, height=28,
             fg_color="transparent", border_width=1, text_color=("gray90", "gray90"),
             font=ctk.CTkFont(size=12),
         ).pack(side="right", padx=(0, 10))
@@ -618,38 +618,53 @@ class App(ctk.CTk):
         self.after(0, lambda: self._process_scan(uid))
 
     def _process_scan(self, uid):
-        self.status_icon.configure(text="●", text_color=KUNING)
-        self.status_text.configure(text=f"Membaca: {uid}...")
+        try:
+            self.status_icon.configure(text="●", text_color=KUNING)
+            self.status_text.configure(text=f"Membaca: {uid}...")
 
-        result = self.db.catat_kunjungan(uid)
-        if result[0]:
-            data = result[1]
-            self.status_icon.configure(text="●", text_color=HIJAU)
-            self.status_text.configure(
-                text=f"Selamat datang, {data['nama']}!",
-                text_color=HIJAU,
-            )
-            self.last_scan_label.configure(text=f"Kartu valid - {data['waktu']}")
-            self._flash_scan_area(HIJAU)
-        else:
-            is_warning = "sudah scan" in result[1].lower()
-            color = ORANYE if is_warning else MERAH
-            self.status_icon.configure(text="●", text_color=color)
-            self.status_text.configure(text=result[1], text_color=color)
-            self.last_scan_label.configure(text="")
-            self._flash_scan_area(color)
+            result = self.db.catat_kunjungan(uid)
+            if result[0]:
+                data = result[1]
+                self.status_icon.configure(text="●", text_color=HIJAU)
+                self.status_text.configure(
+                    text=f"Selamat datang, {data['nama']}!",
+                    text_color=HIJAU,
+                )
+                self.last_scan_label.configure(text=f"Kartu valid - {data['waktu']}")
+                self._flash_scan_area(HIJAU)
+            else:
+                is_warning = "sudah scan" in result[1].lower()
+                color = ORANYE if is_warning else MERAH
+                self.status_icon.configure(text="●", text_color=color)
+                self.status_text.configure(text=result[1], text_color=color)
+                self.last_scan_label.configure(text="")
+                self._flash_scan_area(color)
+        except Exception:
+            pass
 
         self.after(3000, self._reset_scan_status)
 
     def _reset_scan_status(self):
-        self.status_icon.configure(text="●", text_color=KUNING)
-        self.status_text.configure(text="Menunggu kartu...", text_color=("black", "white"))
-        self.last_scan_label.configure(text="")
+        try:
+            self.status_icon.configure(text="●", text_color=KUNING)
+            self.status_text.configure(text="Menunggu kartu...", text_color=("black", "white"))
+            self.last_scan_label.configure(text="")
+        except Exception:
+            pass
 
     def _flash_scan_area(self, color):
-        original = self.scan_area.cget("border_color")
-        self.scan_area.configure(border_color=color)
-        self.after(300, lambda: self.scan_area.configure(border_color=original))
+        try:
+            original = self.scan_area.cget("border_color")
+            self.scan_area.configure(border_color=color)
+            self.after(300, lambda: self._restore_border(original))
+        except Exception:
+            pass
+
+    def _restore_border(self, original):
+        try:
+            self.scan_area.configure(border_color=original)
+        except Exception:
+            pass
 
     def _start_registration_mode(self):
         self._registration_mode = True
@@ -678,11 +693,14 @@ class App(ctk.CTk):
         self.btn_scan_kartu.configure(state="normal")
 
     def _handle_registration_uid(self, uid):
-        self.entry_uid.delete(0, "end")
-        self.entry_uid.insert(0, uid)
-        self._registration_mode = False
-        self.reg_status_label.configure(text=f"UID terbaca: {uid}", text_color=HIJAU)
-        self.btn_scan_kartu.configure(state="normal")
+        try:
+            self.entry_uid.delete(0, "end")
+            self.entry_uid.insert(0, uid)
+            self._registration_mode = False
+            self.reg_status_label.configure(text=f"UID terbaca: {uid}", text_color=HIJAU)
+            self.btn_scan_kartu.configure(state="normal")
+        except Exception:
+            pass
 
     def _simpan_mahasiswa(self):
         uid = self.entry_uid.get().strip()
