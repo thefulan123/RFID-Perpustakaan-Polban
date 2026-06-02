@@ -113,8 +113,14 @@ class Database:
             cur.execute("SELECT * FROM mahasiswa WHERE uid = ?", (uid,))
             mhs = cur.fetchone()
             if not mhs:
-                return False, "Kartu tidak terdaftar"
+                return False, "Kartu tidak valid"
             today = date.today().isoformat()
+            cur.execute(
+                "SELECT COUNT(*) FROM kunjungan WHERE uid = ? AND tanggal = ?",
+                (uid, today),
+            )
+            if cur.fetchone()[0] > 0:
+                return False, "⚠️ Kamu sudah scan hari ini"
             cur.execute(
                 "INSERT INTO kunjungan (uid, nim, nama, tanggal) VALUES (?, ?, ?, ?)",
                 (mhs[0], mhs[1], mhs[2], today),

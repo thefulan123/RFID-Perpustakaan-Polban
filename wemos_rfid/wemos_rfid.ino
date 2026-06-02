@@ -1,38 +1,37 @@
 // =========================================================
 // SISTEM PENDATAAN PENGUNJUNG PERPUSTAKAAN BERBASIS RFID
-// Politeknik Negeri Bandung - D3 Teknik Elektronika
-// =========================================================
-// Wemos D1 (ESP8266) + MFRC522 library.
-//
-// RC522       Wemos D1
-// SDA (SS) -> D2  (GPIO4)
-// SCK      -> D5  (GPIO14)
-// MOSI     -> D7  (GPIO13)
-// MISO     -> D6  (GPIO12)
-// RST      -> D1  (GPIO5)
-// 3.3V     -> 3.3V
-// GND      -> GND
+// Board: LOLIN(WEMOS) D1 R2 & mini + Modul MFRC522
 // =========================================================
 
 #include <SPI.h>
 #include <MFRC522.h>
 
-#define SS_PIN  4   // D2
-#define RST_PIN 5   // D1
+// Konfigurasi pin untuk Wemos D1
+#define SS_PIN  D2   // SDA (GPIO4)
+#define RST_PIN D1   // RST (GPIO5)
 
-MFRC522 mfrc522(SS_PIN, RST_PIN);
+MFRC522 mfrc522(SS_PIN, RST_PIN); // Inisialisasi MFRC522
 
 void setup() {
-  Serial.begin(115200);
-  SPI.begin();
-  mfrc522.PCD_Init();
+  Serial.begin(115200); 
+  SPI.begin();          
+  mfrc522.PCD_Init();   
+  
   Serial.println("READY");
 }
 
 void loop() {
-  if (!mfrc522.PICC_IsNewCardPresent()) return;
-  if (!mfrc522.PICC_ReadCardSerial()) return;
+  // Tunggu sampai ada kartu yang terdeteksi sensor
+  if (!mfrc522.PICC_IsNewCardPresent()) {
+    return;
+  }
 
+  // Baca data serial dari kartu
+  if (!mfrc522.PICC_ReadCardSerial()) {
+    return;
+  }
+
+  // Menggabungkan byte UID menjadi string XX:XX:XX:XX
   String uid = "";
   for (byte i = 0; i < mfrc522.uid.size; i++) {
     if (i > 0) uid += ":";
@@ -41,7 +40,12 @@ void loop() {
   }
   uid.toUpperCase();
 
+  // Kirim UID via serial
   Serial.println(uid);
+
+  // Hentikan pembacaan kartu saat ini
   mfrc522.PICC_HaltA();
-  delay(300);
+  
+  // Jeda 1 detik sebelum percobaan selanjutnya
+  delay(1000); 
 }

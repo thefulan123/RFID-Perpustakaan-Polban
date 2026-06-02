@@ -11,6 +11,7 @@ ctk.set_default_color_theme("blue")
 HIJAU = "#2CC985"
 MERAH = "#E55A5A"
 KUNING = "#F5A623"
+ORANYE = "#FF8C00"
 
 
 class App(ctk.CTk):
@@ -80,6 +81,7 @@ class App(ctk.CTk):
         btn_guest.pack(pady=5)
 
     def _logout(self):
+        self._app_running = False
         self.serial_reader.disconnect()
         for w in self.winfo_children():
             w.destroy()
@@ -97,10 +99,12 @@ class App(ctk.CTk):
             self.role = "admin"
             self.login_frame.destroy()
             self._setup_ui("admin")
-            self._start_background_tasks()
-            if self.serial_reader.connect():
+            self.serial_reader.simulation_mode = False
+            if not self.serial_reader.connect():
+                self.serial_reader.simulation_mode = True
+            else:
                 self.serial_reader.flush()
-                self._poll_serial()
+            self._start_background_tasks()
         else:
             import tkinter.messagebox as mb
             mb.showerror("Error", "Password salah!")
@@ -109,10 +113,12 @@ class App(ctk.CTk):
         self.role = "guest"
         self.login_frame.destroy()
         self._setup_ui("guest")
-        self._start_background_tasks()
-        if self.serial_reader.connect():
+        self.serial_reader.simulation_mode = False
+        if not self.serial_reader.connect():
+            self.serial_reader.simulation_mode = True
+        else:
             self.serial_reader.flush()
-            self._poll_serial()
+        self._start_background_tasks()
 
     def _setup_ui(self, role):
         if role == "guest":
@@ -516,6 +522,7 @@ class App(ctk.CTk):
     def _start_background_tasks(self):
         self._app_running = True
         self._update_clock()
+        self._poll_serial()
         if self.role == "admin":
             self._refresh_monitoring_data()
             self._refresh_mahasiswa_table()
@@ -524,16 +531,25 @@ class App(ctk.CTk):
             self._guest_refresh_data()
 
     def _poll_serial(self):
-        if not self._app_running:
+        if not self.winfo_exists() or not self._app_running:
             return
-        if self.serial_reader.simulation_mode or not self.serial_reader.ser:
+        if not self.serial_reader.simulation_mode and not self.serial_reader.ser:
             return
-        uid = self.serial_reader.read_uid()
-        if uid:
-            self._on_uid_received(uid)
-        self.after(200, self._poll_serial)
+        try:
+            uid = self.serial_reader.read_uid()
+            if uid:
+                self._on_uid_received(uid)
+        except Exception:
+            pass
+        finally:
+            try:
+                self.after(200, self._poll_serial)
+            except Exception:
+                pass
 
     def _guest_refresh_data(self):
+        if not self.winfo_exists():
+            return
         try:
             stats = self.db.get_statistik()
             self.last_scan_label.configure(
@@ -545,11 +561,18 @@ class App(ctk.CTk):
         self.after(2000, self._guest_refresh_data)
 
     def _update_clock(self):
-        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        self.time_label.configure(text=now)
+        if not self.winfo_exists():
+            return
+        try:
+            now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            self.time_label.configure(text=now)
+        except Exception:
+            pass
         self.after(1000, self._update_clock)
 
     def _refresh_monitoring_data(self):
+        if not self.winfo_exists():
+            return
         try:
             stats = self.db.get_statistik()
             kunjungan = self.db.get_kunjungan_hari_ini()
@@ -609,13 +632,12 @@ class App(ctk.CTk):
             self.last_scan_label.configure(text=f"Kartu valid - {data['waktu']}")
             self._flash_scan_area(HIJAU)
         else:
-            self.status_icon.configure(text="●", text_color=MERAH)
-            self.status_text.configure(
-                text=result[1],
-                text_color=MERAH,
-            )
+            is_warning = "sudah scan" in result[1].lower()
+            color = ORANYE if is_warning else MERAH
+            self.status_icon.configure(text="●", text_color=color)
+            self.status_text.configure(text=result[1], text_color=color)
             self.last_scan_label.configure(text="")
-            self._flash_scan_area(MERAH)
+            self._flash_scan_area(color)
 
         self.after(3000, self._reset_scan_status)
 
@@ -757,14 +779,19 @@ class App(ctk.CTk):
             mb.showerror("Export Excel", pesan)
 
     def _refresh_ports(self):
-        ports = self.serial_reader.get_available_ports()
-        self.combo_port.configure(values=ports if ports else ["Tidak ada port"])
-        if ports:
-            current = self.port_var.get()
-            if current not in ports:
-                self.port_var.set(ports[0])
-        else:
-            self.port_var.set("Tidak ada port")
+        if not self.winfo_exists():
+            return
+        try:
+            ports = self.serial_reader.get_available_ports()
+            self.combo_port.configure(values=ports if ports else ["Tidak ada port"])
+            if ports:
+                current = self.port_var.get()
+                if current not in ports:
+                    self.port_var.set(ports[0])
+            else:
+                self.port_var.set("Tidak ada port")
+        except Exception:
+            pass
         self.after(5000, self._refresh_ports)
 
     def _test_koneksi(self):

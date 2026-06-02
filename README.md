@@ -1,82 +1,171 @@
 # Sistem Pendataan Pengunjung Perpustakaan Berbasis RFID
 
-Aplikasi desktop untuk mendata pengunjung perpustakaan menggunakan kartu RFID. Dibangun dengan Python dan CustomTkinter sebagai proyek akhir mata kuliah Sistem Instrumentasi Elektronika di Politeknik Negeri Bandung.
+Aplikasi desktop untuk mendata pengunjung perpustakaan menggunakan kartu RFID.
+Dibangun dengan Python dan CustomTkinter sebagai proyek akhir mata kuliah
+Sistem Instrumentasi Elektronika di Politeknik Negeri Bandung.
 
 ## Fitur
 
-- **Monitoring Real-time**: Menampilkan statistik kunjungan harian, mingguan, dan bulanan
-- **Scan RFID**: Membaca kartu RFID via Arduino + RC522 dan mencatat kunjungan otomatis
-- **Manajemen Kartu**: Daftarkan, cari, dan hapus data mahasiswa
-- **Import/Export Excel**: Import data mahasiswa dan export kunjungan ke file Excel
-- **Mode Simulasi**: Testing tanpa hardware Arduino
-- **Dark Theme**: Tampilan modern dengan tema gelap
+- **Login Admin/Guest** — Admin (password: `admin`) bisa full akses; Guest cuma tap-in
+- **Monitoring Real-time** — Statistik kunjungan harian, mingguan, bulanan
+- **Scan RFID** — Baca kartu via Wemos D1 / Arduino Uno + RC522, catat otomatis
+- **1 Hari 1 Scan** — Kartu yang udah scan hari ini ditolak dengan peringatan
+- **Manajemen Kartu** — Daftar, cari, hapus data mahasiswa
+- **Import/Export Excel** — Import mahasiswa, export data kunjungan
+- **Mode Simulasi** — Testing tanpa hardware (bisa pake tombol "Kartu Valid")
+- **Dark Theme** — Tampilan modern tema gelap
 
-## Requirements
+## Requirements (di PC)
 
-- Python **3.10 atau lebih baru**
-- Library tercantum di `requirements.txt`
+| Software | Keterangan |
+|----------|------------|
+| **Windows 10/11** | Aplikasi ini untuk Windows |
+| **Python 3.10 – 3.13** | Python 3.14 **BELUM support** (pake 3.11 aja) |
+| **pip** | Biasanya udah include sama Python |
 
-## Cara Install
+## Cara Install (CLI)
 
-```bash
+Buka **PowerShell** atau **Command Prompt**, lalu:
+
+```powershell
+# 1. Pastikan Python udah keinstall
+python --version
+# output: Python 3.11.x
+
+# 2. Masuk ke folder aplikasi
+cd E:\Aplikasi Perpustakaan POLBAN\rfid_perpustakaan
+
+# 3. Install semua dependencies
 pip install -r requirements.txt
 ```
 
 ## Cara Menjalankan
 
-```bash
-cd rfid_perpustakaan
+```powershell
+cd E:\Aplikasi Perpustakaan POLBAN\rfid_perpustakaan
 python main.py
 ```
 
-## Koneksi Arduino
+## Login
 
-1. Upload program RFID ke Arduino Uno
-2. Hubungkan Arduino ke komputer via USB
-3. Jalankan aplikasi
-4. Pilih port COM yang sesuai di tab **Pengaturan**
-5. Matikan **Mode Simulasi** untuk menggunakan hardware
+| Role | Password | Akses |
+|------|----------|-------|
+| **Admin** | `admin` | Monitoring, Manajemen Kartu, Pengaturan |
+| **Guest** | (langsung masuk) | Tap-in aja, tombol Kartu Valid |
 
-### Format Data dari Arduino
+## Koneksi Hardware RFID
 
-Arduino mengirim data UID melalui serial dalam format:
+### Opsi 1: Wemos D1 Mini (RECOMMENDED)
+
+Wiring:
+
 ```
-A3:4F:2B:11
+RC522      →  Wemos D1 Mini   →  GPIO
+SDA (SS)   →  D2              →  GPIO4
+SCK        →  D5              →  GPIO14
+MOSI       →  D7              →  GPIO13
+MISO       →  D6              →  GPIO12
+RST        →  D1              →  GPIO5
+3.3V       →  3.3V
+GND        →  GND
 ```
 
-Baudrate: **115200**
+Cara upload:
 
-## Mode Simulasi
+1. Buka `wemos_rfid/wemos_rfid.ino` di Arduino IDE
+2. Pilih Board: **LOLIN(WEMOS) D1 R2 & mini**
+3. Pilih port COM yang sesuai
+4. Klik Upload
+5. Aplikasi otomatis detek Wemos di COM3
 
-Jika belum memiliki hardware Arduino, aktifkan **Mode Simulasi** di tab Pengaturan. Aplikasi akan menghasilkan UID random untuk testing.
+### Opsi 2: Arduino Uno (baremetal, no library)
 
-## Struktur Database
+Wiring:
 
-Database SQLite (`perpustakaan.db`) dibuat otomatis saat pertama kali aplikasi dijalankan, terdiri dari 2 tabel:
+```
+RC522      →  Arduino Uno
+SDA (SS)   →  Pin 7
+RST        →  Pin 9
+MOSI       →  Pin 6
+MISO       →  Pin 5
+SCK        →  Pin 4
+3.3V       →  3.3V
+GND        →  GND
+```
 
-- **mahasiswa**: menyimpan data kartu RFID dan identitas mahasiswa
-- **kunjungan**: mencatat setiap kali kartu di-tap
+Upload `arduino_rfid/arduino_rfid.ino` ke Arduino Uno lewat Arduino IDE.
+
+> **Catatan**: Sketch Arduino Uno pake Software SPI (bitbang), jadi pin BEBAS.
+> Ini khusus untuk board yang pin 10/13 hardware SPI-nya rusak.
+
+### Opsi 3: Mode Simulasi (tanpa hardware)
+
+Gasah pake Arduino/Wemos. Buka **Pengaturan** → nyalakan **Mode Simulasi**,
+atau tinggal klik **"Kartu Valid"** / **"Kartu Tidak Valid"** di layar Guest.
 
 ## Struktur File
 
 ```
 rfid_perpustakaan/
-├── main.py            # Entry point
-├── app.py             # GUI utama (CustomTkinter)
-├── database.py        # Operasi database SQLite
-├── serial_reader.py   # Komunikasi serial dengan Arduino
-├── requirements.txt   # Dependencies
-└── README.md          # Dokumentasi
+├── main.py                    # Entry point aplikasi
+├── app.py                     # GUI utama (CustomTkinter)
+├── database.py                # Operasi database SQLite
+├── serial_reader.py           # Komunikasi serial + mode simulasi
+├── db_viewer.py               # GUI untuk liat database
+├── requirements.txt           # Dependencies Python
+├── README.md                  # Dokumentasi
+│
+├── wemos_rfid/
+│   └── wemos_rfid.ino         # Sketch Wemos D1 (library MFRC522)
+│
+├── wemos_test/
+│   └── wemos_test.ino         # Testing sketch Wemos (verbose output)
+│
+├── arduino_rfid/
+│   └── arduino_rfid.ino       # Sketch Arduino Uno (baremetal SPI)
+│
+└── arduino_test/
+    └── arduino_test.ino       # Testing sketch Arduino (blink + serial)
 ```
+
+## Database
+
+Database SQLite (`perpustakaan.db`) dibuat otomatis saat pertama jalan.
+
+2 tabel:
+
+- **mahasiswa** — UID, NIM, Nama, Prodi
+- **kunjungan** — UID, NIM, Nama, waktu_masuk, tanggal
 
 ## Troubleshooting
 
-**Aplikasi tidak bisa jalan:**
-```bash
-pip install -r requirements.txt
+**`pip install` error / module not found:**
+```powershell
+pip install customtkinter pyserial pandas openpyxl
 ```
 
-**Port serial tidak terdeteksi:**
-- Pastikan Arduino terhubung via USB
-- Cek di Device Manager (Windows) atau `ls /dev/tty*` (Linux)
-- Klik tombol **Refresh** di tab Pengaturan
+**"Kartu tidak terdeteksi" padahal Wemos nyala:**
+- Cek baudrate di sketch: harus **115200**
+- Cek wiring, pastiin pin SDA & RST sesuai
+- Aplikasi output Serial cuma format `A3:4F:2B:11` (tanpa teks tambahan)
+- Coba klik **Refresh** port di tab Pengaturan
+
+**Error "invalid command name" di terminal:**
+Abaikan, itu cuma sisa callback dari logout. Udah diamankan pake try/except.
+
+**Port COM tidak muncul:**
+- Cek Device Manager → Ports (COM & LPT)
+- Cabut pasang USB Arduino/Wemos
+- Klik **Refresh** di tab Pengaturan
+
+**Mau ganti password admin:**
+Buka `app.py`, cari `password == "admin"`, ganti "admin" dengan password baru.
+
+## Untuk Developer / Kontributor
+
+```powershell
+git clone https://github.com/thefulan123/RFID-Perpustakaan-Polban.git
+cd RFID-Perpustakaan-Polban
+pip install -r requirements.txt
+python main.py
+```
