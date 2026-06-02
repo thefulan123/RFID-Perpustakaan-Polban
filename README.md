@@ -59,7 +59,7 @@ python main.py
 
 | Parameter | Nilai |
 |-----------|-------|
-| Tegangan operasi | **3.3V DC** (⚠️ Jangan gunakan 5V! Dapat merusak komponen) |
+| Tegangan operasi | **3.3V DC** (Jangan gunakan 5V! Dapat merusak komponen) |
 | Arus operasi | ~13–26 mA (standby), ~80 mA (saat membaca kartu) |
 | Frekuensi RF | 13.56 MHz (HF — High Frequency) |
 | Protokol komunikasi | **SPI** (SCK, MOSI, MISO, SDA/SS) + RST |
@@ -91,7 +91,7 @@ antara Uno dan RC522. Terdapat beberapa opsi:
 3. **Modul RC522 khusus 5V** — beberapa versi modul RC522 telah dilengkapi regulator 3.3V
    dan level shifter bawaan.
 
-⚠️ **Peringatan**: Meskipun terdapat referensi yang menyatakan bahwa Uno dapat langsung
+**Peringatan**: Meskipun terdapat referensi yang menyatakan bahwa Uno dapat langsung
 dihubungkan ke RC522 tanpa level shifter, hal ini **tidak disarankan** untuk proyek
 permanen. Tegangan 5V secara perlahan dapat merusak input 3.3V chip MFRC522.
 
@@ -147,7 +147,7 @@ Cara upload:
 
 ### Opsi 2: Arduino Uno (baremetal, without library)
 
-⚠️ **PENTING**: Arduino Uno menggunakan logika **5V**, sedangkan RC522 menggunakan **3.3V**.
+**PENTING**: Arduino Uno menggunakan logika **5V**, sedangkan RC522 menggunakan **3.3V**.
 **Wajib menggunakan level shifter** antara Uno dan RC522 (kecuali Uno diganti
 dengan board 3.3V seperti Arduino Pro Mini 3.3V).
 
@@ -191,7 +191,7 @@ atau klik tombol **"Kartu Valid"** / **"Kartu Tidak Valid"** pada tampilan Guest
 
 | Aspek | Wemos D1 Mini | Arduino Uno |
 |-------|---------------|-------------|
-| Tegangan logika | 3.3V ✅ sesuai | 5V ❌ perlu level shifter |
+| Tegangan logika | 3.3V (sesuai) | 5V (perlu level shifter) |
 | Library RFID | MFRC522 (oleh Miguel Balboa) | Software SPI bitbang (buatan sendiri) |
 | Komunikasi SPI | Hardware SPI (built-in) | Software SPI (bitbang) |
 | Pin SPI | Fixed (D5-D7) | Bebas (dapat dipilih sendiri) |
