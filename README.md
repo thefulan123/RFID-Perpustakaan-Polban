@@ -53,9 +53,75 @@ python main.py
 | **Admin** | `admin` | Monitoring, Manajemen Kartu, Pengaturan |
 | **Guest** | (langsung masuk) | Tap-in aja, tombol Kartu Valid |
 
+## Elektrikal
+
+### Spesifikasi Modul RC522
+
+| Parameter | Nilai |
+|-----------|-------|
+| Tegangan operasi | **3.3V DC** (⚠️ JANGAN pake 5V! Bisa rusak) |
+| Arus operasi | ~13–26 mA (standby), ~80 mA (baca kartu) |
+| Frekuensi RF | 13.56 MHz (HF — High Frequency) |
+| Protokol komunikasi | **SPI** (SCK, MOSI, MISO, SDA/SS) + RST |
+| Jarak baca | ~2–5 cm (tergantung kartu dan antena) |
+| Kartu compatible | MIFARE Classic 1K/4K, MIFARE Ultralight, NTAG |
+| Chip | NXP MFRC522 |
+
+### Logika Tegangan (3.3V vs 5V)
+
+- **RC522** adalah modul **3.3V**. Semua pin I/O (SDA, SCK, MOSI, MISO, RST) HANYA
+  boleh diberi tegangan **maks 3.3V**. Kalo dipaksa 5V, chip MFRC522 bisa rusak
+  permanen.
+- **Wemos D1 Mini (ESP8266)** sudah **3.3V native** — semua GPIO-nya 3.3V. Cocok
+  langsung disambung ke RC522 tanpa level shifter.
+- **Arduino Uno** punya logika **5V** di pin I/O. Kalo Arduino Uno dipake langsung
+  ke RC522 tanpa level shifter, tegangan 5V dari pin MOSI/MISO/SCK/SDA bisa
+  ngerusak RC522 dalam jangka panjang.
+
+### Level Shifter (wajib untuk Arduino Uno)
+
+Karena Arduino Uno output-nya 5V, perlu **level shifter** (konverter tegangan)
+antara Uno dan RC522. Ada beberapa opsi:
+
+1. **Modul level shifter 4-channel** (recommended) — $1-2 di toko elektronik.
+   Wiring: HV (5V) ke Uno, LV (3.3V) ke RC522.
+2. **Pembagi tegangan resistor** — pake 2 resistor (1kΩ + 2.2kΩ) tiap jalur SPI.
+   Cuma nurunin tegangan dari 5V ke ~3.3V, tapi arah MISO perlu diatur beda.
+3. **Modul RC522 khusus 5V** — beberapa versi modul RC522 udah include regulator
+   3.3V dan level shifter bawaan.
+
+⚠️ **Peringatan**: Walaupun beberapa orang bilang "langsung colok aja" Uno ke
+RC522 tanpa level shifter, ini **tidak disarankan** untuk proyek permanen.
+Tegangan 5V perlahan ngerusak input 3.3V chip MFRC522.
+
+### Konsumsi Daya
+
+| Komponen | Tegangan | Arus |
+|----------|----------|------|
+| Wemos D1 Mini (aktif + WiFi) | 3.3V | ~80–200 mA |
+| Arduino Uno (aktif) | 5V (via USB/Vin) | ~50–100 mA |
+| Modul RC522 (baca kartu) | 3.3V | ~80 mA |
+| **Total (Wemos + RC522)** | **3.3V** | **~160–280 mA** |
+| **Total (Uno + RC522)** | **5V + 3.3V** | **~130–180 mA** |
+
+Keduanya bisa dicolok langsung ke USB komputer (500 mA max), tanpa adaptor
+tambahan.
+
+### Jarak dan Antena
+
+- Jarak baca maksimal RC522 ~2–5 cm tergantung bentuk kartu/tag
+- Untuk jarak optimal, tempelkan kartu sejajar dengan modul (parallel), bukan
+  tegak lurus
+- Antena RC522 ada di dalam PCB modul (coil printed circuit board)
+
+---
+
 ## Koneksi Hardware RFID
 
 ### Opsi 1: Wemos D1 Mini (RECOMMENDED)
+
+Wemos D1 Mini berbasis ESP8266 dengan logika **3.3V**, jadi cocok langsung
+dengan RC522 tanpa level shifter. Komunikasi SPI via hardware SPI.
 
 Wiring:
 
@@ -80,28 +146,57 @@ Cara upload:
 
 ### Opsi 2: Arduino Uno (baremetal, no library)
 
-Wiring:
+⚠️ **PENTING**: Arduino Uno pake logika **5V**, RC522 pake **3.3V**.
+**Wajib pake level shifter** antara Uno dan RC522 (kecuali Uno diganti
+dengan yang 3.3V kayak Arduino Pro Mini 3.3V).
+
+Sketch ini pake **Software SPI (bitbang)** — semua pin SPI diimplementasikan
+manual lewat kode, bukan hardware SPI. Ini berguna kalo pin hardware SPI
+Uno (10=D10/SS, 11=D11/MOSI, 12=D12/MISO, 13=D13/SCK) ada yang rusak.
+
+Wiring dengan level shifter:
 
 ```
-RC522      →  Arduino Uno
-SDA (SS)   →  Pin 7
-RST        →  Pin 9
-MOSI       →  Pin 6
-MISO       →  Pin 5
-SCK        →  Pin 4
-3.3V       →  3.3V
-GND        →  GND
+RC522      →  Level Shifter  →  Arduino Uno
+SDA (SS)   →  LV1 (HV1)      →  Pin 7
+RST        →  LV2 (HV2)      →  Pin 9
+MOSI       →  LV3 (HV3)      →  Pin 6
+MISO       →  LV4 (HV4)      →  Pin 5
+SCK        →  LV5 (HV5)      →  Pin 4
+3.3V       →  LV             →  (GND via shifter)
+GND        →  GND            →  GND
+             HV              →  5V
 ```
+
+Atau kalo pake pembagi tegangan resistor tiap jalur SPI:
+
+```
+RC522 SDA ← 3.3V ← [1kΩ] ── [2.2kΩ] → GND
+                         ↑
+                  Pin 7 Uno (5V)
+```
+
+(Sama untuk SCK, MOSI, RST. Khusus MISO arahnya sebaliknya dari RC522 ke Uno,
+jadi aman — 3.3V masuk ke Uno dianggap sebagai logic HIGH.)
 
 Upload `arduino_rfid/arduino_rfid.ino` ke Arduino Uno lewat Arduino IDE.
-
-> **Catatan**: Sketch Arduino Uno pake Software SPI (bitbang), jadi pin BEBAS.
-> Ini khusus untuk board yang pin 10/13 hardware SPI-nya rusak.
 
 ### Opsi 3: Mode Simulasi (tanpa hardware)
 
 Gasah pake Arduino/Wemos. Buka **Pengaturan** → nyalakan **Mode Simulasi**,
 atau tinggal klik **"Kartu Valid"** / **"Kartu Tidak Valid"** di layar Guest.
+
+### Perbandingan Opsi Hardware
+
+| Aspek | Wemos D1 Mini | Arduino Uno |
+|-------|---------------|-------------|
+| Tegangan logika | 3.3V ✅ cocok | 5V ❌ perlu level shifter |
+| Library RFID | MFRC522 (by Miguel Balboa) | Software SPI bitbang (buatan sendiri) |
+| Komunikasi SPI | Hardware SPI (built-in) | Software SPI (bitbang) |
+| Pin SPI | Fixed (D5-D7) | Bebas (pilih sendiri) |
+| Harga board | ~Rp50.000 | ~Rp70.000 |
+| Ukuran | Sangat kecil | Besar |
+| Butuh level shifter? | Tidak | Ya |
 
 ## Struktur File
 
