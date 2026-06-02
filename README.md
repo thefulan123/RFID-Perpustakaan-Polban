@@ -6,36 +6,36 @@ Sistem Instrumentasi Elektronika di Politeknik Negeri Bandung.
 
 ## Fitur
 
-- **Login Admin/Guest** — Admin (password: `admin`) bisa full akses; Guest cuma tap-in
-- **Monitoring Real-time** — Statistik kunjungan harian, mingguan, bulanan
-- **Scan RFID** — Baca kartu via Wemos D1 / Arduino Uno + RC522, catat otomatis
-- **1 Hari 1 Scan** — Kartu yang udah scan hari ini ditolak dengan peringatan
-- **Manajemen Kartu** — Daftar, cari, hapus data mahasiswa
-- **Import/Export Excel** — Import mahasiswa, export data kunjungan
-- **Mode Simulasi** — Testing tanpa hardware (bisa pake tombol "Kartu Valid")
-- **Dark Theme** — Tampilan modern tema gelap
+- **Login Admin/Guest** — Admin (password: `admin`) memiliki akses penuh; Guest hanya dapat melakukan tap-in
+- **Monitoring Real-time** — Menampilkan statistik kunjungan harian, mingguan, dan bulanan
+- **Scan RFID** — Membaca kartu melalui Wemos D1 / Arduino Uno + RC522, pencatatan dilakukan secara otomatis
+- **1 Hari 1 Scan** — Kartu yang telah melakukan scan pada hari yang sama akan ditolak dengan peringatan
+- **Manajemen Kartu** — Mendaftarkan, mencari, dan menghapus data mahasiswa
+- **Import/Export Excel** — Import data mahasiswa dan export data kunjungan ke file Excel
+- **Mode Simulasi** — Pengujian tanpa hardware (dapat menggunakan tombol "Kartu Valid")
+- **Dark Theme** — Tampilan modern dengan tema gelap
 
-## Requirements (di PC)
+## Kebutuhan Sistem (di PC)
 
 | Software | Keterangan |
 |----------|------------|
-| **Windows 10/11** | Aplikasi ini untuk Windows |
-| **Python 3.10 – 3.13** | Python 3.14 **BELUM support** (pake 3.11 aja) |
-| **pip** | Biasanya udah include sama Python |
+| **Windows 10/11** | Aplikasi ini berjalan pada sistem operasi Windows |
+| **Python 3.10 – 3.13** | Python 3.14 belum mendukung (disarankan menggunakan Python 3.11) |
+| **pip** | Umumnya sudah tersedia bersamaan dengan instalasi Python |
 
 ## Cara Install (CLI)
 
-Buka **PowerShell** atau **Command Prompt**, lalu:
+Buka **PowerShell** atau **Command Prompt**, kemudian:
 
 ```powershell
-# 1. Pastikan Python udah keinstall
+# 1. Pastikan Python telah terinstall
 python --version
-# output: Python 3.11.x
+# output yang diharapkan: Python 3.11.x
 
-# 2. Masuk ke folder aplikasi
+# 2. Masuk ke direktori aplikasi
 cd E:\Aplikasi Perpustakaan POLBAN\rfid_perpustakaan
 
-# 3. Install semua dependencies
+# 3. Install seluruh dependensi
 pip install -r requirements.txt
 ```
 
@@ -51,7 +51,7 @@ python main.py
 | Role | Password | Akses |
 |------|----------|-------|
 | **Admin** | `admin` | Monitoring, Manajemen Kartu, Pengaturan |
-| **Guest** | (langsung masuk) | Tap-in aja, tombol Kartu Valid |
+| **Guest** | (langsung masuk) | Halaman tap-in, tombol Kartu Valid |
 
 ## Elektrikal
 
@@ -59,8 +59,8 @@ python main.py
 
 | Parameter | Nilai |
 |-----------|-------|
-| Tegangan operasi | **3.3V DC** (⚠️ JANGAN pake 5V! Bisa rusak) |
-| Arus operasi | ~13–26 mA (standby), ~80 mA (baca kartu) |
+| Tegangan operasi | **3.3V DC** (⚠️ Jangan gunakan 5V! Dapat merusak komponen) |
+| Arus operasi | ~13–26 mA (standby), ~80 mA (saat membaca kartu) |
 | Frekuensi RF | 13.56 MHz (HF — High Frequency) |
 | Protokol komunikasi | **SPI** (SCK, MOSI, MISO, SDA/SS) + RST |
 | Jarak baca | ~2–5 cm (tergantung kartu dan antena) |
@@ -69,30 +69,31 @@ python main.py
 
 ### Logika Tegangan (3.3V vs 5V)
 
-- **RC522** adalah modul **3.3V**. Semua pin I/O (SDA, SCK, MOSI, MISO, RST) HANYA
-  boleh diberi tegangan **maks 3.3V**. Kalo dipaksa 5V, chip MFRC522 bisa rusak
-  permanen.
-- **Wemos D1 Mini (ESP8266)** sudah **3.3V native** — semua GPIO-nya 3.3V. Cocok
-  langsung disambung ke RC522 tanpa level shifter.
-- **Arduino Uno** punya logika **5V** di pin I/O. Kalo Arduino Uno dipake langsung
-  ke RC522 tanpa level shifter, tegangan 5V dari pin MOSI/MISO/SCK/SDA bisa
-  ngerusak RC522 dalam jangka panjang.
+- **RC522** merupakan modul **3.3V**. Seluruh pin I/O (SDA, SCK, MOSI, MISO, RST) hanya
+  boleh diberikan tegangan **maksimal 3.3V**. Jika diberikan tegangan 5V, chip MFRC522
+  dapat mengalami kerusakan permanen.
+- **Wemos D1 Mini (ESP8266)** sudah **3.3V native** — seluruh GPIO-nya menggunakan 3.3V.
+  Cocok langsung dihubungkan ke RC522 tanpa level shifter.
+- **Arduino Uno** memiliki logika **5V** pada pin I/O. Jika Arduino Uno digunakan secara
+  langsung ke RC522 tanpa level shifter, tegangan 5V dari pin MOSI/MISO/SCK/SDA dapat
+  merusak RC522 dalam jangka panjang.
 
 ### Level Shifter (wajib untuk Arduino Uno)
 
-Karena Arduino Uno output-nya 5V, perlu **level shifter** (konverter tegangan)
-antara Uno dan RC522. Ada beberapa opsi:
+Karena Arduino Uno menghasilkan output 5V, diperlukan **level shifter** (konverter tegangan)
+antara Uno dan RC522. Terdapat beberapa opsi:
 
-1. **Modul level shifter 4-channel** (recommended) — $1-2 di toko elektronik.
-   Wiring: HV (5V) ke Uno, LV (3.3V) ke RC522.
-2. **Pembagi tegangan resistor** — pake 2 resistor (1kΩ + 2.2kΩ) tiap jalur SPI.
-   Cuma nurunin tegangan dari 5V ke ~3.3V, tapi arah MISO perlu diatur beda.
-3. **Modul RC522 khusus 5V** — beberapa versi modul RC522 udah include regulator
-   3.3V dan level shifter bawaan.
+1. **Modul level shifter 4-channel** (direkomendasikan) — tersedia di toko elektronik
+   dengan harga terjangkau. Wiring: HV (5V) ke Uno, LV (3.3V) ke RC522.
+2. **Pembagi tegangan resistor** — menggunakan 2 resistor (1kΩ + 2.2kΩ) pada setiap jalur
+   SPI. Berfungsi menurunkan tegangan dari 5V menjadi ~3.3V, namun arah MISO perlu diatur
+   secara berbeda.
+3. **Modul RC522 khusus 5V** — beberapa versi modul RC522 telah dilengkapi regulator 3.3V
+   dan level shifter bawaan.
 
-⚠️ **Peringatan**: Walaupun beberapa orang bilang "langsung colok aja" Uno ke
-RC522 tanpa level shifter, ini **tidak disarankan** untuk proyek permanen.
-Tegangan 5V perlahan ngerusak input 3.3V chip MFRC522.
+⚠️ **Peringatan**: Meskipun terdapat referensi yang menyatakan bahwa Uno dapat langsung
+dihubungkan ke RC522 tanpa level shifter, hal ini **tidak disarankan** untuk proyek
+permanen. Tegangan 5V secara perlahan dapat merusak input 3.3V chip MFRC522.
 
 ### Konsumsi Daya
 
@@ -104,24 +105,24 @@ Tegangan 5V perlahan ngerusak input 3.3V chip MFRC522.
 | **Total (Wemos + RC522)** | **3.3V** | **~160–280 mA** |
 | **Total (Uno + RC522)** | **5V + 3.3V** | **~130–180 mA** |
 
-Keduanya bisa dicolok langsung ke USB komputer (500 mA max), tanpa adaptor
-tambahan.
+Keduanya dapat dihubungkan langsung ke USB komputer (500 mA max) tanpa memerlukan
+adaptor tambahan.
 
 ### Jarak dan Antena
 
 - Jarak baca maksimal RC522 ~2–5 cm tergantung bentuk kartu/tag
-- Untuk jarak optimal, tempelkan kartu sejajar dengan modul (parallel), bukan
-  tegak lurus
-- Antena RC522 ada di dalam PCB modul (coil printed circuit board)
+- Untuk jarak optimal, tempelkan kartu sejajar dengan modul (parallel), bukan dalam
+  posisi tegak lurus
+- Antena RC522 terdapat di dalam PCB modul (coil printed circuit board)
 
 ---
 
 ## Koneksi Hardware RFID
 
-### Opsi 1: Wemos D1 Mini (RECOMMENDED)
+### Opsi 1: Wemos D1 Mini (DIREKOMENDASIKAN)
 
-Wemos D1 Mini berbasis ESP8266 dengan logika **3.3V**, jadi cocok langsung
-dengan RC522 tanpa level shifter. Komunikasi SPI via hardware SPI.
+Wemos D1 Mini berbasis ESP8266 dengan logika **3.3V**, sehingga cocok langsung
+dihubungkan dengan RC522 tanpa level shifter. Komunikasi SPI menggunakan hardware SPI.
 
 Wiring:
 
@@ -142,17 +143,17 @@ Cara upload:
 2. Pilih Board: **LOLIN(WEMOS) D1 R2 & mini**
 3. Pilih port COM yang sesuai
 4. Klik Upload
-5. Aplikasi otomatis detek Wemos di COM3
+5. Aplikasi akan mendeteksi Wemos secara otomatis di COM3
 
-### Opsi 2: Arduino Uno (baremetal, no library)
+### Opsi 2: Arduino Uno (baremetal, without library)
 
-⚠️ **PENTING**: Arduino Uno pake logika **5V**, RC522 pake **3.3V**.
-**Wajib pake level shifter** antara Uno dan RC522 (kecuali Uno diganti
-dengan yang 3.3V kayak Arduino Pro Mini 3.3V).
+⚠️ **PENTING**: Arduino Uno menggunakan logika **5V**, sedangkan RC522 menggunakan **3.3V**.
+**Wajib menggunakan level shifter** antara Uno dan RC522 (kecuali Uno diganti
+dengan board 3.3V seperti Arduino Pro Mini 3.3V).
 
-Sketch ini pake **Software SPI (bitbang)** — semua pin SPI diimplementasikan
-manual lewat kode, bukan hardware SPI. Ini berguna kalo pin hardware SPI
-Uno (10=D10/SS, 11=D11/MOSI, 12=D12/MISO, 13=D13/SCK) ada yang rusak.
+Sketch ini menggunakan **Software SPI (bitbang)** — seluruh pin SPI diimplementasikan
+secara manual melalui kode, bukan hardware SPI. Metode ini berguna jika pin hardware SPI
+Uno (10=D10/SS, 11=D11/MOSI, 12=D12/MISO, 13=D13/SCK) mengalami kerusakan.
 
 Wiring dengan level shifter:
 
@@ -168,7 +169,7 @@ GND        →  GND            →  GND
              HV              →  5V
 ```
 
-Atau kalo pake pembagi tegangan resistor tiap jalur SPI:
+Atau jika menggunakan pembagi tegangan resistor pada setiap jalur SPI:
 
 ```
 RC522 SDA ← 3.3V ← [1kΩ] ── [2.2kΩ] → GND
@@ -176,27 +177,27 @@ RC522 SDA ← 3.3V ← [1kΩ] ── [2.2kΩ] → GND
                   Pin 7 Uno (5V)
 ```
 
-(Sama untuk SCK, MOSI, RST. Khusus MISO arahnya sebaliknya dari RC522 ke Uno,
-jadi aman — 3.3V masuk ke Uno dianggap sebagai logic HIGH.)
+(Langkah yang sama berlaku untuk SCK, MOSI, RST. Khusus MISO arahnya berkebalikan,
+dari RC522 ke Uno — tegangan 3.3V masuk ke Uno dan tetap dianggap sebagai logic HIGH.)
 
-Upload `arduino_rfid/arduino_rfid.ino` ke Arduino Uno lewat Arduino IDE.
+Upload `arduino_rfid/arduino_rfid.ino` ke Arduino Uno melalui Arduino IDE.
 
 ### Opsi 3: Mode Simulasi (tanpa hardware)
 
-Gasah pake Arduino/Wemos. Buka **Pengaturan** → nyalakan **Mode Simulasi**,
-atau tinggal klik **"Kartu Valid"** / **"Kartu Tidak Valid"** di layar Guest.
+Tidak perlu menggunakan Arduino/Wemos. Buka menu **Pengaturan** → aktifkan **Mode Simulasi**,
+atau klik tombol **"Kartu Valid"** / **"Kartu Tidak Valid"** pada tampilan Guest.
 
 ### Perbandingan Opsi Hardware
 
 | Aspek | Wemos D1 Mini | Arduino Uno |
 |-------|---------------|-------------|
-| Tegangan logika | 3.3V ✅ cocok | 5V ❌ perlu level shifter |
-| Library RFID | MFRC522 (by Miguel Balboa) | Software SPI bitbang (buatan sendiri) |
+| Tegangan logika | 3.3V ✅ sesuai | 5V ❌ perlu level shifter |
+| Library RFID | MFRC522 (oleh Miguel Balboa) | Software SPI bitbang (buatan sendiri) |
 | Komunikasi SPI | Hardware SPI (built-in) | Software SPI (bitbang) |
-| Pin SPI | Fixed (D5-D7) | Bebas (pilih sendiri) |
+| Pin SPI | Fixed (D5-D7) | Bebas (dapat dipilih sendiri) |
 | Harga board | ~Rp50.000 | ~Rp70.000 |
 | Ukuran | Sangat kecil | Besar |
-| Butuh level shifter? | Tidak | Ya |
+| Memerlukan level shifter? | Tidak | Ya |
 
 ## Struktur File
 
@@ -206,7 +207,7 @@ rfid_perpustakaan/
 ├── app.py                     # GUI utama (CustomTkinter)
 ├── database.py                # Operasi database SQLite
 ├── serial_reader.py           # Komunikasi serial + mode simulasi
-├── db_viewer.py               # GUI untuk liat database
+├── db_viewer.py               # GUI untuk melihat database
 ├── requirements.txt           # Dependencies Python
 ├── README.md                  # Dokumentasi
 │
@@ -225,36 +226,39 @@ rfid_perpustakaan/
 
 ## Database
 
-Database SQLite (`perpustakaan.db`) dibuat otomatis saat pertama jalan.
+Database SQLite (`perpustakaan.db`) dibuat secara otomatis saat pertama kali
+aplikasi dijalankan.
 
-2 tabel:
+Terdiri dari 2 tabel:
 
-- **mahasiswa** — UID, NIM, Nama, Prodi
-- **kunjungan** — UID, NIM, Nama, waktu_masuk, tanggal
+- **mahasiswa** — menyimpan UID, NIM, Nama, Prodi
+- **kunjungan** — mencatat UID, NIM, Nama, waktu_masuk, tanggal
 
 ## Troubleshooting
 
-**`pip install` error / module not found:**
+**Error `pip install` / module not found:**
 ```powershell
 pip install customtkinter pyserial pandas openpyxl
 ```
 
-**"Kartu tidak terdeteksi" padahal Wemos nyala:**
-- Cek baudrate di sketch: harus **115200**
-- Cek wiring, pastiin pin SDA & RST sesuai
-- Aplikasi output Serial cuma format `A3:4F:2B:11` (tanpa teks tambahan)
-- Coba klik **Refresh** port di tab Pengaturan
+**"Kartu tidak terdeteksi" padahal Wemos menyala:**
+- Periksa baudrate pada sketch: harus **115200**
+- Periksa wiring, pastikan pin SDA dan RST sesuai
+- Output serial aplikasi hanya format `A3:4F:2B:11` (tanpa teks tambahan)
+- Coba klik **Refresh** port pada tab Pengaturan
 
 **Error "invalid command name" di terminal:**
-Abaikan, itu cuma sisa callback dari logout. Udah diamankan pake try/except.
+Dapat diabaikan, merupakan sisa callback dari proses logout. Sudah diamankan
+menggunakan try/except.
 
 **Port COM tidak muncul:**
-- Cek Device Manager → Ports (COM & LPT)
-- Cabut pasang USB Arduino/Wemos
-- Klik **Refresh** di tab Pengaturan
+- Periksa Device Manager → Ports (COM & LPT)
+- Cabut dan pasang kembali USB Arduino/Wemos
+- Klik **Refresh** pada tab Pengaturan
 
-**Mau ganti password admin:**
-Buka `app.py`, cari `password == "admin"`, ganti "admin" dengan password baru.
+**Mengganti password admin:**
+Buka file `app.py`, cari `password == "admin"`, ganti "admin" dengan password
+yang baru.
 
 ## Untuk Developer / Kontributor
 
