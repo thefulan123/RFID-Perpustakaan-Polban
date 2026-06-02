@@ -543,10 +543,9 @@ class App(ctk.CTk):
                 if not self.serial_reader.simulation_mode and not self.serial_reader.is_connected():
                     self.serial_reader.reconnect()
 
-            if not self.serial_reader.simulation_mode:
-                uid = self.serial_reader.read_uid()
-                if uid:
-                    self._on_uid_received(uid)
+            uid = self.serial_reader.read_uid()
+            if uid:
+                self._on_uid_received(uid)
         except Exception:
             pass
         finally:

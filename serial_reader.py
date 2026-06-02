@@ -100,6 +100,8 @@ class SerialReader:
 
     def read_uid(self):
         if self.simulation_mode:
+            if random.random() < 0.04:
+                return random.choice(self._simulated_uids)
             return None
 
         if not self.ser or not self.ser.is_open:
