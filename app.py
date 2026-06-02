@@ -667,6 +667,17 @@ class App(ctk.CTk):
         except Exception:
             pass
 
+    def _clear_label(self, attr):
+        try:
+            w = getattr(self, attr, None)
+            if w:
+                w.configure(text="")
+        except Exception:
+            pass
+
+    def _clear_msg(self):
+        self._clear_label("form_msg")
+
     def _restore_border(self, original):
         try:
             self.scan_area.configure(border_color=original)
@@ -695,9 +706,12 @@ class App(ctk.CTk):
         self.after(15000, self._cancel_registration_mode)
 
     def _cancel_registration_mode(self):
-        self._registration_mode = False
-        self.reg_status_label.configure(text="", text_color=KUNING)
-        self.btn_scan_kartu.configure(state="normal")
+        try:
+            self._registration_mode = False
+            self.reg_status_label.configure(text="", text_color=KUNING)
+            self.btn_scan_kartu.configure(state="normal")
+        except Exception:
+            pass
 
     def _handle_registration_uid(self, uid):
         try:
@@ -729,7 +743,7 @@ class App(ctk.CTk):
         else:
             self.form_msg.configure(text=pesan, text_color=MERAH)
 
-        self.after(3000, lambda: self.form_msg.configure(text=""))
+        self.after(3000, lambda: self._clear_msg())
 
     def _refresh_mahasiswa_table(self, data=None):
         for w in self.mahasiswa_container.winfo_children():
@@ -823,7 +837,7 @@ class App(ctk.CTk):
         port = self.port_var.get()
         if not port or port == "Tidak ada port":
             self.port_test_label.configure(text="Pilih port terlebih dahulu", text_color=MERAH)
-            self.after(3000, lambda: self.port_test_label.configure(text=""))
+            self.after(3000, lambda: self._clear_label("port_test_label"))
             return
 
         self.port_test_label.configure(text="Mengetes...", text_color=KUNING)
@@ -844,7 +858,7 @@ class App(ctk.CTk):
             self.port_test_label.configure(text="Koneksi berhasil ✓", text_color=HIJAU)
         else:
             self.port_test_label.configure(text="Gagal terhubung ✗", text_color=MERAH)
-        self.after(3000, lambda: self.port_test_label.configure(text=""))
+        self.after(3000, lambda: self._clear_label("port_test_label"))
 
     def _random_scan(self):
         import random
