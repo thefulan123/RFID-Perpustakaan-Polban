@@ -70,16 +70,37 @@ class SerialReader:
                 pass
         self.ser = None
 
+    def is_connected(self):
+        if self.simulation_mode:
+            return True
+        if self.ser and self.ser.is_open:
+            try:
+                self.ser.in_waiting
+                return True
+            except serial.SerialException:
+                pass
+        return False
+
+    def reconnect(self):
+        self.disconnect()
+        self._running = False
+        self.ser = None
+        port = self.port
+        self.port = None
+        if port:
+            self.port = port
+        return self.connect()
+
     def flush(self):
         if self.ser and self.ser.is_open:
-            self.ser.reset_input_buffer()
+            try:
+                self.ser.reset_input_buffer()
+            except serial.SerialException:
+                pass
 
     def read_uid(self):
         if self.simulation_mode:
-            import time
-            uid = random.choice(self._simulated_uids)
-            time.sleep(random.uniform(0.5, 2.0))
-            return uid
+            return None
 
         if not self.ser or not self.ser.is_open:
             return None

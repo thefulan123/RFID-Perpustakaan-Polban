@@ -33,6 +33,7 @@ class App(ctk.CTk):
         self._last_uid = None
         self._last_uid_time = None
         self._app_running = False
+        self._poll_counter = 0
 
         self._show_login()
 
@@ -536,9 +537,16 @@ class App(ctk.CTk):
         if not self.serial_reader.simulation_mode and not self.serial_reader.ser:
             return
         try:
-            uid = self.serial_reader.read_uid()
-            if uid:
-                self._on_uid_received(uid)
+            self._poll_counter += 1
+            if self._poll_counter >= 150:
+                self._poll_counter = 0
+                if not self.serial_reader.simulation_mode and not self.serial_reader.is_connected():
+                    self.serial_reader.reconnect()
+
+            if not self.serial_reader.simulation_mode:
+                uid = self.serial_reader.read_uid()
+                if uid:
+                    self._on_uid_received(uid)
         except Exception:
             pass
         finally:
